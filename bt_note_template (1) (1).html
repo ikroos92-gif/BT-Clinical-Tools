@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Session Note Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F4F0;
+    --surface: #FFFFFF;
+    --border: #E2E0D8;
+    --border-strong: #C8C5BA;
+    --text: #1A1917;
+    --text-muted: #6B6960;
+    --text-faint: #9B9890;
+    --accent: #2D5F3F;
+    --s1: #1B6B3A; --s1-bg: #E6F4EC; --s1-border: #8FCB9B;
+    --s2: #2D6B8A; --s2-bg: #E6F2F8; --s2-border: #8FC3D8;
+    --s3: #7A6B1A; --s3-bg: #FAF4E0; --s3-border: #D4BA5A;
+    --s4: #8A4B1A; --s4-bg: #FBF0E6; --s4-border: #D49A5A;
+    --s5: #8A1A1A; --s5-bg: #FBE8E8; --s5-border: #D46A6A;
+    --req-color: #7A4F1A; --req-bg: #FDF3E3; --req-border: #E8C87A;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html { font-size: 16px; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 2rem; }
+
+  .header { background: var(--accent); padding: 0.875rem 1.25rem; position: sticky; top: 0; z-index: 100; }
+  .header h1 { font-size: 15px; font-weight: 600; color: #fff; }
+  .header p { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+
+  .legend {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    padding: 10px 1rem; background: var(--surface); border-bottom: 1px solid var(--border);
+    position: sticky; top: 56px; z-index: 99;
+  }
+  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .d1{background:var(--s1)} .d2{background:var(--s2)} .d3{background:var(--s3)} .d4{background:var(--s4)} .d5{background:var(--s5)}
+
+  .main { padding: 0.875rem 1rem 0; max-width: 680px; margin: 0 auto; }
+
+  .section-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; margin-bottom: 0.75rem; }
+  .section-card.optional-card { border-style: dashed; }
+  .section-card.required-card { border-color: var(--req-border); background: var(--req-bg); }
+
+  .section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .section-num { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; color: var(--text-faint); letter-spacing: 0.08em; text-transform: uppercase; }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
+  .badge { font-size: 10px; font-weight: 600; border-radius: 4px; padding: 1px 7px; letter-spacing: 0.03em; }
+  .badge-opt { background: #EEE; color: var(--text-muted); }
+  .badge-fill { background: #F5E0B5; color: var(--req-color); }
+
+  .section-hint { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+  .subsection-label { font-size: 11px; font-weight: 600; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; margin: 12px 0 6px; }
+  .subsection-label:first-of-type { margin-top: 0; }
+
+  .scale-row { display: flex; flex-direction: column; gap: 5px; }
+  .chip {
+    font-family: 'DM Sans', sans-serif; font-size: 12.5px; line-height: 1.4;
+    padding: 7px 11px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text-muted); cursor: pointer;
+    transition: all 0.12s; text-align: left; width: 100%;
+    -webkit-user-select: none; user-select: none;
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .chip:active { transform: scale(0.99); }
+  .chip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .chip.s1 .chip-dot{background:var(--s1)} .chip.s2 .chip-dot{background:var(--s2)}
+  .chip.s3 .chip-dot{background:var(--s3)} .chip.s4 .chip-dot{background:var(--s4)} .chip.s5 .chip-dot{background:var(--s5)}
+  .chip.s1.sel{background:var(--s1-bg);border-color:var(--s1-border);color:var(--s1);font-weight:500}
+  .chip.s2.sel{background:var(--s2-bg);border-color:var(--s2-border);color:var(--s2);font-weight:500}
+  .chip.s3.sel{background:var(--s3-bg);border-color:var(--s3-border);color:var(--s3);font-weight:500}
+  .chip.s4.sel{background:var(--s4-bg);border-color:var(--s4-border);color:var(--s4);font-weight:500}
+  .chip.s5.sel{background:var(--s5-bg);border-color:var(--s5-border);color:var(--s5);font-weight:500}
+
+  .fill-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 10px; margin-top: 8px;
+  }
+  .fill-stem { font-size: 13px; color: var(--text-muted); white-space: nowrap; padding-top: 2px; flex-shrink: 0; font-weight: 500; }
+  .fill-input {
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    border: none; outline: none; background: transparent;
+    color: var(--text); width: 100%; resize: none; line-height: 1.5; min-height: 24px;
+  }
+  .fill-input::placeholder { color: var(--text-faint); font-style: italic; }
+
+  .preview-wrap {
+    position: sticky; bottom: 0; background: var(--bg);
+    padding: 0.75rem 1rem 1rem; border-top: 1px solid var(--border);
+    max-width: 680px; margin: 0 auto;
+  }
+  .preview-label { font-size: 10px; font-weight: 600; color: var(--text-faint); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+  .preview-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.75rem 1rem; font-size: 13px; line-height: 1.75; color: var(--text);
+    min-height: 64px; max-height: 150px; overflow-y: auto;
+  }
+  .preview-placeholder { color: var(--text-faint); font-style: italic; }
+  .preview-missing { color: var(--req-color); font-style: italic; }
+  .preview-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .btn-copy {
+    flex: 1; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+    padding: 11px; border-radius: 10px; border: none;
+    background: var(--accent); color: #fff; cursor: pointer; transition: opacity 0.15s;
+  }
+  .btn-copy:disabled { opacity: 0.38; cursor: not-allowed; }
+  .btn-copy:active:not(:disabled) { opacity: 0.85; }
+  .btn-clear {
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    padding: 11px 16px; border-radius: 10px; border: 1px solid var(--border-strong);
+    background: var(--surface); color: var(--text-muted); cursor: pointer;
+  }
+  .btn-clear:active { opacity: 0.7; }
+
+  .toast {
+    position: fixed; bottom: 220px; left: 50%; transform: translateX(-50%) translateY(10px);
+    background: #1A1917; color: #fff; font-size: 13px; padding: 8px 18px;
+    border-radius: 999px; opacity: 0; transition: all 0.2s; pointer-events: none; z-index: 999; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Session Note Builder</h1>
+  <p>One chip per section unless marked — fill in amber fields to unlock Copy</p>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot d1"></div>Strong success</div>
+  <div class="legend-item"><div class="legend-dot d2"></div>Good session</div>
+  <div class="legend-item"><div class="legend-dot d3"></div>Mixed / moderate</div>
+  <div class="legend-item"><div class="legend-dot d4"></div>Difficult</div>
+  <div class="legend-item"><div class="legend-dot d5"></div>Significant struggle</div>
+</div>
+
+<div class="main">
+
+<!-- ══ 1. OPENER ══ -->
+<div class="section-card">
+  <div class="section-header">
+    <span class="section-num">1</span>
+    <span class="section-title">Session opener</span>
+  </div>
+  <div class="section-hint">Select one — sets the overall tone of the note.</div>
+  <div class="scale-row" id="opener">
+    <button class="chip s1" onclick="pickOne(this,'opener')"><span class="chip-dot"></span>Client arrived ready to engage and transitioned to the session area without difficulty.</button>
+    <button class="chip s2" onclick="pickOne(this,'opener')"><span class="chip-dot"></span>Client arrived and transitioned to the session area with minimal support.</button>
+    <button class="chip s3" onclick="pickOne(this,'opener')"><span class="chip-dot"></span>Client required prompting to transition into the session area at the start of the session.</button>
+    <button class="chip s4" onclick="pickOne(this,'opener')"><span class="chip-dot"></span>Client had notable difficulty transitioning into the session and required significant support.</button>
+    <button class="chip s5" onclick="pickOne(this,'opener')"><span class="chip-dot"></span>Client was dysregulated at session start and was unable to transition into programming without extended support.</button>
+  </div>
+</div>
+
+<!-- ══ 2. MOTIVATION ══ -->
+<div class="section-card required-card">
+  <div class="section-header">
+    <span class="section-num">2</span>
+    <span class="section-title">Motivation &amp; reinforcement</span>
+    <span class="badge badge-fill">FILL IN</span>
+  </div>
+  <div class="section-hint">Select one, then list the specific reinforcers used.</div>
+  <div class="scale-row" id="motivation">
+    <button class="chip s1" onclick="pickOne(this,'motivation')"><span class="chip-dot"></span>Client was highly motivated throughout the session and responded consistently to reinforcement.</button>
+    <button class="chip s2" onclick="pickOne(this,'motivation')"><span class="chip-dot"></span>Client responded well to preferred items and demonstrated adequate motivation during programming.</button>
+    <button class="chip s3" onclick="pickOne(this,'motivation')"><span class="chip-dot"></span>Client's motivation varied throughout the session; preferred items were used to maintain engagement.</button>
+    <button class="chip s4" onclick="pickOne(this,'motivation')"><span class="chip-dot"></span>Client showed limited motivation; reinforcer effectiveness was reduced during the session.</button>
+    <button class="chip s5" onclick="pickOne(this,'motivation')"><span class="chip-dot"></span>Client appeared satiated or disengaged; no reinforcers were effective in sustaining participation.</button>
+  </div>
+  <div class="fill-row">
+    <span class="fill-stem">Reinforcers used:</span>
+    <textarea class="fill-input" id="motivation-fill" rows="1" placeholder="e.g. iPad, bubbles, verbal praise, edibles per care plan" oninput="autoResize(this); updatePreview()"></textarea>
+  </div>
+</div>
+
+<!-- ══ 3. ANTECEDENT STRATEGIES USED ══ -->
+<div class="section-card optional-card">
+  <div class="section-header">
+    <span class="section-num">3</span>
+    <span class="section-title">Antecedent strategies used</span>
+    <span class="badge badge-opt">OPTIONAL</span>
+  </div>
+  <div class="section-hint">Select how the client responded to antecedent strategies overall, then describe what was used.</div>
+  <div class="scale-row" id="antecedents">
+    <button class="chip s1" onclick="pickOne(this,'antecedents')"><span class="chip-dot"></span>Antecedent strategies were effective; client responded positively to all or nearly all introductions.</button>
+    <button class="chip s2" onclick="pickOne(this,'antecedents')"><span class="chip-dot"></span>Antecedent strategies were effective for the majority of introductions with minimal resistance.</button>
+    <button class="chip s3" onclick="pickOne(this,'antecedents')"><span class="chip-dot"></span>Client response to antecedent strategies was variable — effective on some introductions but not consistently.</button>
+    <button class="chip s4" onclick="pickOne(this,'antecedents')"><span class="chip-dot"></span>Antecedent strategies were effective on only a minority of introductions; client frequently required additional support.</button>
+    <button class="chip s5" onclick="pickOne(this,'antecedents')"><span class="chip-dot"></span>Antecedent strategies were largely ineffective; client did not respond to strategies as introduced.</button>
+  </div>
+  <div class="fill-row">
+    <span class="fill-stem">Strategies used:</span>
+    <textarea class="fill-input" id="antecedents-fill" rows="1" placeholder="e.g. visual schedule, first-then board, pre-session sensory break, demand fading" oninput="autoResize(this); updatePreview()"></textarea>
+  </div>
+</div>
+
+<!-- ══ 4. CHALLENGING BEHAVIOR ══ -->
+<div class="section-card optional-card">
+  <div class="section-header">
+    <span class="section-num">4</span>
+    <span class="section-title">Challenging behavior</span>
+    <span class="badge badge-opt">OPTIONAL</span>
+  </div>
+  <div class="section-hint">Select all that apply, then describe what occurred and how it was addressed.</div>
+  <div class="scale-row" id="chalbx">
+    <button class="chip s1" onclick="pickMany(this,'chalbx')"><span class="chip-dot"></span>No target behaviors were observed during the session.</button>
+    <button class="chip s2" onclick="pickMany(this,'chalbx')"><span class="chip-dot"></span>Minor instances of challenging behavior occurred but were brief and did not disrupt programming.</button>
+    <button class="chip s3" onclick="pickMany(this,'chalbx')"><span class="chip-dot"></span>Challenging behavior occurred and required the therapist to pause programming temporarily.</button>
+    <button class="chip s4" onclick="pickMany(this,'chalbx')"><span class="chip-dot"></span>Challenging behavior was elevated and significantly impacted the session; BIP strategies were implemented.</button>
+    <button class="chip s5" onclick="pickMany(this,'chalbx')"><span class="chip-dot"></span>Challenging behavior was severe and persistent; BCBA was notified per protocol.</button>
+  </div>
+  <div class="fill-row">
+    <span class="fill-stem">Behavior:</span>
+    <textarea class="fill-input" id="chalbx-bx-fill" rows="1" placeholder="e.g. vocal protests (yelling), hitting table surface approx. 4x" oninput="autoResize(this); updatePreview()"></textarea>
+  </div>
+  <div class="fill-row" style="margin-top:6px;">
+    <span class="fill-stem">Intervention:</span>
+    <textarea class="fill-input" id="chalbx-int-fill" rows="1" placeholder="e.g. planned ignoring, offered break with fidget, re-presented demand at lower level" oninput="autoResize(this); updatePreview()"></textarea>
+  </div>
+</div>
+
+<!-- ══ 5. PROGRAMMING ══ -->
+<div class="section-card required-card">
+  <div class="section-header">
+    <span class="section-num">5</span>
+    <span class="section-title">Programming &amp; skill work</span>
+    <span class="badge badge-fill">FILL IN</span>
+  </div>
+  <div class="section-hint">Select one for progress, then fill in both target fields.</div>
+
+  <div class="subsection-label">Progress</div>
+  <div class="scale-row" id="progress">
+    <button class="chip s1" onclick="pickOne(this,'progress')"><span class="chip-dot"></span>Client demonstrated strong progress and met or exceeded expectations on current targets.</button>
+    <button class="chip s2" onclick="pickOne(this,'progress')"><span class="chip-dot"></span>Client showed improvement compared to recent sessions and performed at or above baseline.</button>
+    <button class="chip s3" onclick="pickOne(this,'progress')"><span class="chip-dot"></span>Client performance was variable — some targets were met while others required continued support.</button>
+    <button class="chip s4" onclick="pickOne(this,'progress')"><span class="chip-dot"></span>Client struggled with the majority of current targets; performance was below recent levels.</button>
+    <button class="chip s5" onclick="pickOne(this,'progress')"><span class="chip-dot"></span>Client was unable to engage with targets at expected levels; program review may be warranted.</button>
+  </div>
+  <div class="fill-row">
+    <span class="fill-stem">Notable success targets:</span>
+    <textarea class="fill-input" id="progress-success-fill" rows="1" placeholder="e.g. independently labeled 5/5 animal tacts, met mastery on manding for attention" oninput="autoResize(this); updatePreview()"></textarea>
+  </div>
+  <div class="fill-row" style="margin-top:6px;">
+    <span class="fill-stem">Targets requiring support:</span>
+    <textarea class="fill-input" id="progress-support-fill" rows="1" placeholder="e.g. listener responding at 40%, intraverbal fill-ins required full verbal model" oninput="autoResize(this); updatePreview()"></textarea>
+  </div>
+</div>
+
+<!-- ══ 6. CLOSING ══ -->
+<div class="section-card">
+  <div class="section-header">
+    <span class="section-num">6</span>
+    <span class="section-title">Closing statement</span>
+  </div>
+  <div class="section-hint">Select all that apply.</div>
+  <div class="scale-row" id="closing">
+    <button class="chip s1" onclick="pickMany(this,'closing')"><span class="chip-dot"></span>Session concluded without incident. Data was collected and recorded per treatment plan.</button>
+    <button class="chip s2" onclick="pickMany(this,'closing')"><span class="chip-dot"></span>Client was dismissed at session end with caregiver present.</button>
+    <button class="chip s3" onclick="pickMany(this,'closing')"><span class="chip-dot"></span>Caregiver was updated on session performance at dismissal.</button>
+    <button class="chip s4" onclick="pickMany(this,'closing')"><span class="chip-dot"></span>Session ended early; documentation reflects time provided.</button>
+    <button class="chip s5" onclick="pickMany(this,'closing')"><span class="chip-dot"></span>BCBA was notified of session events per protocol.</button>
+  </div>
+</div>
+
+<div style="height:240px;"></div>
+</div>
+
+<!-- ══ PREVIEW ══ -->
+<div class="preview-wrap">
+  <div class="preview-label">Your note</div>
+  <div class="preview-box" id="note-output">
+    <span class="preview-placeholder">Select options above to build your note.</span>
+  </div>
+  <div class="preview-actions">
+    <button class="btn-copy" id="copy-btn" onclick="copyNote()" disabled>Copy note</button>
+    <button class="btn-clear" onclick="clearAll()">Clear all</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">Copied to clipboard</div>
+
+<script>
+const single = {};
+const multi  = {};
+
+function getChipText(el) {
+  const clone = el.cloneNode(true);
+  clone.querySelector('.chip-dot')?.remove();
+  return clone.innerText.trim();
+}
+
+function pickOne(el, group) {
+  document.querySelectorAll('#' + group + ' .chip').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+  single[group] = getChipText(el);
+  updatePreview();
+}
+
+function pickMany(el, group) {
+  if (!multi[group]) multi[group] = new Set();
+  const text = getChipText(el);
+  if (el.classList.contains('sel')) {
+    el.classList.remove('sel');
+    multi[group].delete(text);
+  } else {
+    el.classList.add('sel');
+    multi[group].add(text);
+  }
+  updatePreview();
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+function fv(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+function updatePreview() {
+  const parts = [];
+  let missing = false;
+
+  // 1. Opener
+  if (single['opener']) parts.push(single['opener']);
+
+  // 2. Motivation + required fill
+  if (single['motivation']) {
+    parts.push(single['motivation']);
+    const rf = fv('motivation-fill');
+    if (rf) parts.push('Reinforcers used: ' + rf + '.');
+    else missing = true;
+  }
+
+  // 3. Antecedent strategies (optional — only if chip selected)
+  if (single['antecedents']) {
+    parts.push(single['antecedents']);
+    const af = fv('antecedents-fill');
+    if (af) parts.push('Strategies used: ' + af + '.');
+  }
+
+  // 4. Challenging behavior (optional multi)
+  if (multi['chalbx'] && multi['chalbx'].size > 0) {
+    multi['chalbx'].forEach(t => parts.push(t));
+    const bf  = fv('chalbx-bx-fill');
+    const inf = fv('chalbx-int-fill');
+    if (bf)  parts.push('Behavior observed: ' + bf + '.');
+    if (inf) parts.push('Intervention: ' + inf + '.');
+  }
+
+  // 5. Progress + two required fills
+  if (single['progress']) {
+    parts.push(single['progress']);
+    const sf  = fv('progress-success-fill');
+    const spf = fv('progress-support-fill');
+    if (sf)  parts.push('Notable success targets: ' + sf + '.');
+    else missing = true;
+    if (spf) parts.push('Targets requiring support: ' + spf + '.');
+    else missing = true;
+  }
+
+  // 6. Closing (multi)
+  if (multi['closing'] && multi['closing'].size > 0) {
+    multi['closing'].forEach(t => parts.push(t));
+  }
+
+  const out = document.getElementById('note-output');
+  const btn = document.getElementById('copy-btn');
+
+  if (parts.length === 0) {
+    out.innerHTML = '<span class="preview-placeholder">Select options above to build your note.</span>';
+    btn.disabled = true;
+    return;
+  }
+
+  let html = parts.join(' ');
+  if (missing) html += ' <span class="preview-missing">[Complete fill-in fields to unlock Copy]</span>';
+  out.innerHTML = html;
+  btn.disabled = missing;
+}
+
+function clearAll() {
+  ['opener','motivation','antecedents','progress'].forEach(g => {
+    delete single[g];
+    document.querySelectorAll('#' + g + ' .chip').forEach(c => c.classList.remove('sel'));
+  });
+  ['chalbx','closing'].forEach(g => {
+    multi[g] = new Set();
+    document.querySelectorAll('#' + g + ' .chip').forEach(c => c.classList.remove('sel'));
+  });
+  ['motivation-fill','antecedents-fill','chalbx-bx-fill','chalbx-int-fill',
+   'progress-success-fill','progress-support-fill'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = ''; el.style.height = 'auto'; }
+  });
+  updatePreview();
+}
+
+function copyNote() {
+  const out = document.getElementById('note-output');
+  const clone = out.cloneNode(true);
+  clone.querySelectorAll('.preview-missing').forEach(el => el.remove());
+  const text = clone.innerText.trim();
+  if (!text || text.includes('Select options')) return;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(showToast).catch(() => fallbackCopy(text));
+  } else { fallbackCopy(text); }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  document.execCommand('copy'); document.body.removeChild(ta);
+  showToast();
+}
+
+function showToast() {
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+</script>
+</body>
+</html>
